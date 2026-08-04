@@ -9,26 +9,52 @@ import { ShoppingBag, ArrowLeft, Trash2 } from 'lucide-react';
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clear, totalCount } = useCartStore();
 
-  async function checkout() {
+  async function checkout(payWithStripe: boolean) {
     if (items.length === 0) return;
+
     const res = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        paymentChannel: payWithStripe ? 'stripe' : 'manual',
       }),
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.error || '下单失败');
+      alert(data.error || '下单失败（演示账号请先登录：user@store.com / user123）');
       return;
     }
-    alert(
-      data.source === 'demo'
-        ? `演示订单已创建：${data.id}\n金额 ¥${data.total}\n\n${data.message || ''}`
-        : `订单已创建：${data.id}\n金额 ¥${data.total}（库存已预扣）`
-    );
+
     clear();
+
+    if (data.source === 'demo') {
+      alert(
+        `演示订单：${data.id}\n金额 ¥${data.total}\n\n${data.message || ''}\n\n配置 DATABASE_URL 后可真实预扣库存并支付。`
+      );
+      return;
+    }
+
+    if (payWithStripe) {
+      const payRes = await fetch('/api/payments/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: data.id }),
+      });
+      const payData = await payRes.json();
+      if (payRes.ok && payData.url) {
+        window.location.href = payData.url;
+        return;
+      }
+      alert(
+        (payData.error || '无法调起 Stripe') +
+          '\n订单已创建为待支付，可在「我的订单」中重试或等待人工确认。'
+      );
+    } else {
+      alert(`订单已创建：${data.id}\n金额 ¥${data.total}\n状态：待支付（人工/转账确认）`);
+    }
+
+    window.location.href = '/orders';
   }
 
   return (
@@ -36,7 +62,9 @@ export default function CartPage() {
       <Navbar />
       <main className="flex-1 py-10">
         <div className="mx-auto max-w-2xl px-4">
-          <h1 className="mb-6 text-2xl font-bold">购物车 {totalCount() > 0 && `(${totalCount()})`}</h1>
+          <h1 className="mb-6 text-2xl font-bold">
+            购物车 {totalCount() > 0 && `(${totalCount()})`}
+          </h1>
 
           {items.length === 0 ? (
             <div className="flex flex-col items-center py-16">
@@ -55,7 +83,10 @@ export default function CartPage() {
             <>
               <div className="space-y-3">
                 {items.map((item) => (
-                  <div key={item.productId} className="flex items-center justify-between rounded-xl border bg-white p-4">
+                  <div
+                    key={item.productId}
+                    className="flex items-center justify-between rounded-xl border bg-white p-4"
+                  >
                     <div>
                       <div className="font-medium">{item.title || item.productId}</div>
                       {item.price != null && (
@@ -67,29 +98,44 @@ export default function CartPage() {
                         type="number"
                         min={1}
                         value={item.quantity}
-                        onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
+                        onChange={(e) =>
+                          updateQuantity(item.productId, Number(e.target.value))
+                        }
                         className="w-16 rounded border px-2 py-1 text-sm"
                       />
-                      <button onClick={() => removeItem(item.productId)} className="text-red-400 hover:text-red-600">
+                      <button
+                        onClick={() => removeItem(item.productId)}
+                        className="text-red-400 hover:text-red-600"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
-                  onClick={checkout}
+                  onClick={() => checkout(true)}
                   className="flex-1 rounded-full bg-brand-600 py-3 font-semibold text-white hover:bg-brand-700"
                 >
-                  去结算（创建订单并预扣库存）
+                  下单并 Stripe 支付
                 </button>
-                <button onClick={clear} className="rounded-full border px-6 py-3 text-sm text-gray-600 hover:bg-gray-50">
-                  清空
+                <button
+                  onClick={() => checkout(false)}
+                  className="flex-1 rounded-full border border-brand-200 py-3 font-semibold text-brand-700 hover:bg-pink-50"
+                >
+                  下单（待人工确认收款）
                 </button>
               </div>
+              <button
+                onClick={clear}
+                className="mt-3 w-full text-center text-sm text-gray-500 hover:text-gray-800"
+              >
+                清空购物车
+              </button>
               <p className="mt-3 text-xs text-gray-400">
-                登录用户可调用 /api/cart 同步到服务端；游客使用本地存储。配置 DATABASE_URL 后订单将真实预扣库存。
+                需登录后创建真实订单。演示用户：user@store.com / user123。Stripe
+                需配置密钥；否则订单会保留为待支付。
               </p>
             </>
           )}
