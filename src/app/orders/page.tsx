@@ -10,6 +10,7 @@ interface OrderRow {
   status: string;
   total: number | string;
   paymentChannel?: string | null;
+  trackingNumber?: string | null;
   createdAt?: string;
   items?: { quantity: number; product?: { title?: string } }[];
 }
@@ -21,8 +22,10 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('paid') === '1') setMsg('支付已提交，以到账结果为准（Webhook 确认后状态会更新为已支付）。');
-    if (params.get('cancelled') === '1') setMsg('已取消支付，订单仍为待支付，可重新发起。');
+    if (params.get('paid') === '1')
+      setMsg('支付已提交，以到账结果为准（Webhook 确认后状态会更新）。');
+    if (params.get('cancelled') === '1')
+      setMsg('已取消支付，订单仍为待支付。');
 
     fetch('/api/orders')
       .then(async (r) => {
@@ -94,7 +97,10 @@ export default function OrdersPage() {
               <div key={o.id} className="rounded-xl border bg-white p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="text-sm text-gray-500">
-                    {o.id.slice(0, 8)}… · {o.createdAt ? new Date(o.createdAt).toLocaleString('zh-CN') : ''}
+                    {o.id.slice(0, 8)}… ·{' '}
+                    {o.createdAt
+                      ? new Date(o.createdAt).toLocaleString('zh-CN')
+                      : ''}
                   </div>
                   <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs">
                     {statusLabel[o.status] || o.status}
@@ -103,26 +109,22 @@ export default function OrdersPage() {
                 <p className="mt-2 text-lg font-bold text-brand-600">
                   ¥{Number(o.total).toFixed(2)}
                 </p>
-                {o.items && o.items.length > 0 && (
-                  <ul className="mt-2 text-sm text-gray-600">
-                    {o.items.map((it, idx) => (
-                      <li key={idx}>
-                        {it.product?.title || '商品'} × {it.quantity}
-                      </li>
-                    ))}
-                  </ul>
+                {o.trackingNumber && (
+                  <p className="mt-1 text-sm text-gray-600">
+                    物流单号：{o.trackingNumber}
+                  </p>
                 )}
                 {o.status === 'PENDING' && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       onClick={() => payStripe(o.id)}
-                      className="rounded-full bg-brand-600 px-4 py-1.5 text-sm text-white hover:bg-brand-700"
+                      className="rounded-full bg-brand-600 px-4 py-1.5 text-sm text-white"
                     >
                       Stripe 支付
                     </button>
                     <button
                       onClick={() => cancelOrder(o.id)}
-                      className="rounded-full border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+                      className="rounded-full border px-4 py-1.5 text-sm text-gray-600"
                     >
                       取消订单
                     </button>

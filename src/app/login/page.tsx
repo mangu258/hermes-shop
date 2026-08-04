@@ -29,7 +29,6 @@ export default function LoginPage() {
         setError(data.error || '登录失败');
         return;
       }
-      // merge local cart if any
       try {
         const raw = localStorage.getItem('hermes-cart');
         if (raw) {
@@ -44,7 +43,7 @@ export default function LoginPage() {
           }
         }
       } catch {
-        /* ignore merge errors */
+        /* ignore */
       }
       router.push('/');
       router.refresh();
@@ -96,7 +95,10 @@ export default function LoginPage() {
             </button>
           </form>
           <p className="mt-4 text-center text-sm text-gray-500">
-            没有账号？{' '}
+            <Link href="/forgot-password" className="text-brand-600 hover:underline">
+              忘记密码
+            </Link>
+            {' · '}
             <Link href="/register" className="text-brand-600 hover:underline">
               注册
             </Link>

@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const { orderId, action } = await req.json();
+    const { orderId, action, trackingNumber } = await req.json();
     if (!orderId || !action || !ALLOWED[action]) {
       return NextResponse.json({ error: '参数错误' }, { status: 400 });
     }
@@ -80,13 +80,18 @@ export async function PATCH(req: NextRequest) {
     if (action === 'ship') {
       const updated = await prisma.order.update({
         where: { id: orderId },
-        data: { status: 'SHIPPED' },
+        data: {
+          status: 'SHIPPED',
+          trackingNumber: trackingNumber ? String(trackingNumber) : order.trackingNumber,
+          shippedAt: new Date(),
+        },
       });
       await logAdminAction({
         adminId: session.userId,
         action: 'order.ship',
         targetType: 'order',
         targetId: orderId,
+        detail: { trackingNumber: updated.trackingNumber },
         ip: req.headers.get('x-forwarded-for') ?? undefined,
       });
       return NextResponse.json(updated);

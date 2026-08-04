@@ -3,18 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-const ACTIONS: Record<string, { action: string; label: string }[]> = {
-  PENDING: [
-    { action: 'confirm_paid', label: '确认已收款' },
-    { action: 'cancel', label: '取消并归还库存' },
-  ],
-  PAID: [{ action: 'ship', label: '标记已发货' }],
-  SHIPPED: [{ action: 'complete', label: '标记已完成' }],
-};
-
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tracking, setTracking] = useState<Record<string, string>>({});
 
   function load() {
     setLoading(true);
@@ -30,11 +22,15 @@ export default function AdminOrdersPage() {
   }, []);
 
   async function run(orderId: string, action: string) {
+    const body: Record<string, string> = { orderId, action };
+    if (action === 'ship') {
+      body.trackingNumber = tracking[orderId] || '';
+    }
     if (!confirm(`确认执行：${action}？`)) return;
     const res = await fetch('/api/admin/orders', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId, action }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -56,7 +52,7 @@ export default function AdminOrdersPage() {
       </header>
       <main className="mx-auto max-w-4xl px-4 py-8">
         <p className="mb-4 text-xs text-gray-500">
-          状态流：PENDING → 确认收款 → PAID → 发货 → SHIPPED → 完成 → COMPLETED；PENDING 可取消归还库存
+          PENDING → 确认收款 → PAID → 填写单号发货 → SHIPPED → 完成；PENDING 可取消归还库存
         </p>
         {loading && <p className="text-sm text-gray-500">加载中...</p>}
         {!loading && orders.length === 0 && (
@@ -71,30 +67,53 @@ export default function AdminOrdersPage() {
               </div>
               <div className="mt-1">
                 ¥{Number(o.total).toFixed(2)} · {o.user?.email || '—'}
-                {o.paymentChannel ? ` · ${o.paymentChannel}` : ''}
               </div>
-              <div className="mt-1 text-xs text-gray-400">
-                {o.createdAt ? new Date(o.createdAt).toLocaleString('zh-CN') : ''}
-              </div>
-              {o.items?.length > 0 && (
-                <ul className="mt-2 text-xs text-gray-600">
-                  {o.items.map((it: any, i: number) => (
-                    <li key={i}>
-                      {it.product?.title || it.productId} × {it.quantity}
-                    </li>
-                  ))}
-                </ul>
+              {o.trackingNumber && (
+                <div className="mt-1 text-xs text-gray-600">物流单号：{o.trackingNumber}</div>
               )}
               <div className="mt-2 flex flex-wrap gap-2">
-                {(ACTIONS[o.status] || []).map((a) => (
+                {o.status === 'PENDING' && (
+                  <>
+                    <button
+                      onClick={() => run(o.id, 'confirm_paid')}
+                      className="rounded bg-gray-900 px-3 py-1 text-xs text-white"
+                    >
+                      确认已收款
+                    </button>
+                    <button
+                      onClick={() => run(o.id, 'cancel')}
+                      className="rounded border px-3 py-1 text-xs"
+                    >
+                      取消
+                    </button>
+                  </>
+                )}
+                {o.status === 'PAID' && (
+                  <div className="flex w-full flex-wrap items-center gap-2">
+                    <input
+                      className="rounded border px-2 py-1 text-xs"
+                      placeholder="物流单号（可选）"
+                      value={tracking[o.id] || ''}
+                      onChange={(e) =>
+                        setTracking((t) => ({ ...t, [o.id]: e.target.value }))
+                      }
+                    />
+                    <button
+                      onClick={() => run(o.id, 'ship')}
+                      className="rounded bg-gray-900 px-3 py-1 text-xs text-white"
+                    >
+                      标记已发货
+                    </button>
+                  </div>
+                )}
+                {o.status === 'SHIPPED' && (
                   <button
-                    key={a.action}
-                    onClick={() => run(o.id, a.action)}
+                    onClick={() => run(o.id, 'complete')}
                     className="rounded bg-gray-900 px-3 py-1 text-xs text-white"
                   >
-                    {a.label}
+                    标记已完成
                   </button>
-                ))}
+                )}
               </div>
             </div>
           ))}

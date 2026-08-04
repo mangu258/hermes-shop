@@ -26,7 +26,7 @@ model User {
   passwordHash  String
   name          String?
   role          Role      @default(USER)
-  adminRole     String?   // super_admin | editor | support etc.
+  adminRole     String?
   birthDate     DateTime?
   ageVerified   Boolean   @default(false)
   ageVerifiedAt DateTime?
@@ -65,20 +65,20 @@ model Category {
 }
 
 model Product {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   title             String
-  description       String   @db.Text
+  description       String    @db.Text
   translations      Json?
-  price             Decimal  @db.Decimal(10, 2)
-  stock             Int      @default(0)
-  lowStockThreshold Int      @default(5)
+  price             Decimal   @db.Decimal(10, 2)
+  stock             Int       @default(0)
+  lowStockThreshold Int       @default(5)
   imageUrl          String?
   categoryId        String?
   category          Category? @relation(fields: [categoryId], references: [id])
-  published         Boolean  @default(true)
-  visibility        String   @default("public") // public | members_only | hidden
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  published         Boolean   @default(true)
+  visibility        String    @default("public")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   orderItems OrderItem[]
   cartItems  CartItem[]
@@ -88,26 +88,26 @@ model Product {
 }
 
 model ProductImage {
-  id        String  @id @default(uuid())
+  id        String   @id @default(uuid())
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   imageUrl  String
   altText   String?
-  enabled   Boolean @default(true)
-  sortOrder Int     @default(0)
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 }
 
 model ProductVideo {
-  id           String  @id @default(uuid())
+  id           String   @id @default(uuid())
   productId    String
-  product      Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  type         String  // upload | external_link
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type         String
   videoUrl     String
   thumbnailUrl String?
   title        String?
-  enabled      Boolean @default(false)
-  sortOrder    Int     @default(0)
+  enabled      Boolean  @default(false)
+  sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
 }
 
@@ -133,6 +133,8 @@ model Order {
   paidAt                DateTime?
   stripePaymentIntentId String?
   shippingAddress       String?
+  trackingNumber        String?
+  shippedAt             DateTime?
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
 
@@ -150,16 +152,16 @@ model OrderItem {
 }
 
 model Address {
-  id            String  @id @default(uuid())
+  id            String   @id @default(uuid())
   userId        String
-  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipientName String
   phone         String
   country       String
   province      String?
   city          String
   detail        String
-  isDefault     Boolean @default(false)
+  isDefault     Boolean  @default(false)
   createdAt     DateTime @default(now())
 }
 
@@ -181,11 +183,11 @@ model PaymentChannel {
   id             String   @id @default(uuid())
   key            String   @unique
   displayName    String
-  type           String   // api | qrcode | manual
+  type           String
   enabled        Boolean  @default(false)
   configComplete Boolean  @default(false)
   qrCodeImage    String?
-  config         String?  // encrypted
+  config         String?
   sortOrder      Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -195,7 +197,7 @@ model SupportChannel {
   id           String   @id @default(uuid())
   key          String   @unique
   displayName  String
-  type         String   // link | qrcode | embed
+  type         String
   contactValue String?
   qrCodeImage  String?
   embedCode    String?
