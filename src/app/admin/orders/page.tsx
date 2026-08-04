@@ -3,6 +3,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+const ACTIONS: Record<string, { action: string; label: string }[]> = {
+  PENDING: [
+    { action: 'confirm_paid', label: '确认已收款' },
+    { action: 'cancel', label: '取消并归还库存' },
+  ],
+  PAID: [{ action: 'ship', label: '标记已发货' }],
+  SHIPPED: [{ action: 'complete', label: '标记已完成' }],
+};
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,12 +29,12 @@ export default function AdminOrdersPage() {
     load();
   }, []);
 
-  async function confirmPaid(orderId: string) {
-    if (!confirm('确认已收到该笔款项？')) return;
+  async function run(orderId: string, action: string) {
+    if (!confirm(`确认执行：${action}？`)) return;
     const res = await fetch('/api/admin/orders', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId, action: 'confirm_paid' }),
+      body: JSON.stringify({ orderId, action }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -46,16 +55,19 @@ export default function AdminOrdersPage() {
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-8">
+        <p className="mb-4 text-xs text-gray-500">
+          状态流：PENDING → 确认收款 → PAID → 发货 → SHIPPED → 完成 → COMPLETED；PENDING 可取消归还库存
+        </p>
         {loading && <p className="text-sm text-gray-500">加载中...</p>}
         {!loading && orders.length === 0 && (
-          <p className="text-sm text-gray-400">暂无订单（需配置数据库并产生真实订单）</p>
+          <p className="text-sm text-gray-400">暂无订单</p>
         )}
         <div className="space-y-3">
           {orders.map((o) => (
             <div key={o.id} className="rounded-xl border bg-white p-4 text-sm">
               <div className="flex flex-wrap justify-between gap-2">
                 <span className="font-mono text-xs text-gray-500">{o.id}</span>
-                <span>{o.status}</span>
+                <span className="font-medium">{o.status}</span>
               </div>
               <div className="mt-1">
                 ¥{Number(o.total).toFixed(2)} · {o.user?.email || '—'}
@@ -64,14 +76,26 @@ export default function AdminOrdersPage() {
               <div className="mt-1 text-xs text-gray-400">
                 {o.createdAt ? new Date(o.createdAt).toLocaleString('zh-CN') : ''}
               </div>
-              {o.status === 'PENDING' && (
-                <button
-                  onClick={() => confirmPaid(o.id)}
-                  className="mt-2 rounded bg-gray-900 px-3 py-1 text-xs text-white"
-                >
-                  确认已收款
-                </button>
+              {o.items?.length > 0 && (
+                <ul className="mt-2 text-xs text-gray-600">
+                  {o.items.map((it: any, i: number) => (
+                    <li key={i}>
+                      {it.product?.title || it.productId} × {it.quantity}
+                    </li>
+                  ))}
+                </ul>
               )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(ACTIONS[o.status] || []).map((a) => (
+                  <button
+                    key={a.action}
+                    onClick={() => run(o.id, a.action)}
+                    className="rounded bg-gray-900 px-3 py-1 text-xs text-white"
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
             </div>
           ))}
         </div>
