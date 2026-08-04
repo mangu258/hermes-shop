@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import ProductReviews from '@/components/ProductReviews';
 import { DEMO_PRODUCTS } from '@/lib/demo-data';
 import { ArrowLeft, Package, Shield, ShoppingBag } from 'lucide-react';
 
@@ -36,6 +37,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               <p className="mt-4 text-xs text-gray-500">库存：{product.stock} 件 · 支持未开封7天无理由退换</p>
             </div>
           </div>
+
+          <ProductReviews productId={product.id} />
         </div>
       </main>
       <Footer />

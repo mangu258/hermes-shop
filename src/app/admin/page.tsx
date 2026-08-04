@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Package, ShoppingBag, Users, Settings } from 'lucide-react';
+import { Package, ShoppingBag, Users, Settings, CreditCard, ScrollText } from 'lucide-react';
 
 export default function AdminDashboard() {
   return (
@@ -38,11 +38,34 @@ export default function AdminDashboard() {
             <p className="mt-1 text-xs text-gray-400">全部默认关闭</p>
           </div>
         </div>
+
+        <div className="mt-10">
+          <h2 className="mb-4 text-lg font-semibold">快捷入口</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Link href="/admin/payments" className="flex items-center gap-3 rounded-xl border bg-white p-5 transition hover:border-pink-200 hover:shadow-sm">
+              <CreditCard className="h-5 w-5 text-brand-600" />
+              <div>
+                <div className="font-medium">支付通道管理</div>
+                <div className="text-sm text-gray-500">配置 API Key / 启用通道</div>
+              </div>
+            </Link>
+            <Link href="/admin/audit-logs" className="flex items-center gap-3 rounded-xl border bg-white p-5 transition hover:border-pink-200 hover:shadow-sm">
+              <ScrollText className="h-5 w-5 text-brand-600" />
+              <div>
+                <div className="font-medium">审计日志</div>
+                <div className="text-sm text-gray-500">查看管理员操作记录</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
         <div className="mt-10 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
           <p className="font-medium">部署提示</p>
           <p className="mt-1">
-            配置 <code className="rounded bg-amber-100 px-1">DATABASE_URL</code> 与 <code className="rounded bg-amber-100 px-1">JWT_SECRET</code> 后执行
-            <code className="mx-1 rounded bg-amber-100 px-1">npx prisma db push</code> 即可启用完整数据库能力。支付通道需在后台填入 Key 并启用后才对前台可见。
+            配置 <code className="rounded bg-amber-100 px-1">DATABASE_URL</code>、<code className="rounded bg-amber-100 px-1">JWT_SECRET</code>、
+            <code className="rounded bg-amber-100 px-1">CONFIG_ENCRYPTION_KEY</code> 后执行
+            <code className="mx-1 rounded bg-amber-100 px-1">npx prisma db push</code>。
+            Stripe Webhook 指向 <code className="rounded bg-amber-100 px-1">/api/payments/webhook/stripe</code>。
           </p>
         </div>
       </main>

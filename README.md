@@ -1,10 +1,10 @@
 # Hermes Shop · 私密健康商城
 
-基于对话设计文档重新开发的完整成人用品电商应用。
+根据对话设计文档重新开发的完整成人用品电商应用。
 
-**仓库地址**：https://github.com/mangu258/hermes-shop
+**仓库**：https://github.com/mangu258/hermes-shop
 
-## 已实现能力
+## 功能清单
 
 | 模块 | 状态 |
 |------|------|
@@ -12,11 +12,16 @@
 | 前台首页 / 商品列表 / 详情 | ✅ |
 | 用户登录 / 管理员登录 | ✅ |
 | 管理后台控制台 | ✅ |
-| 完整 Prisma Schema（用户/权限/商品/订单/支付通道/客服/公告等） | ✅ |
-| 支付通道 Provider 注册表（默认关闭，配置完整才可启用） | ✅ |
-| 隐私承诺 + 法律页面（服务条款/隐私/退款） | ✅ |
-| Middleware（年龄门禁 + 后台鉴权） | ✅ |
-| 演示数据 fallback（无数据库也能展示） | ✅ |
+| **真实订单创建 + 库存预扣** | ✅ |
+| **订单取消并归还库存** | ✅ |
+| **购物车服务端 API + 本地 zustand 持久化** | ✅ |
+| **支付通道后台配置页 + AES 加密存储** | ✅ |
+| **Stripe Webhook 骨架** | ✅ |
+| **多语言字典（zh / en）** | ✅ |
+| **商品评价 API + 展示组件** | ✅ |
+| **审计日志 API + 后台页面** | ✅ |
+| 完整 Prisma Schema | ✅ |
+| 法律页面 | ✅ |
 
 ## 演示账号
 
@@ -32,28 +37,37 @@ git clone https://github.com/mangu258/hermes-shop.git
 cd hermes-shop
 npm install
 cp .env.example .env
-# 编辑 .env 填入 DATABASE_URL 与 JWT_SECRET（可选）
+# 填 DATABASE_URL、JWT_SECRET、CONFIG_ENCRYPTION_KEY（可选）
 npm run dev
 ```
 
-访问 http://localhost:3000 → 先通过年龄门禁 → 浏览商品。
+- 前台：http://localhost:3000（先过年龄门禁）
+- 后台：http://localhost:3000/admin/login
+- 支付通道：http://localhost:3000/admin/payments
+- 审计日志：http://localhost:3000/admin/audit-logs
 
-管理后台：http://localhost:3000/admin/login
+## 关键 API
 
-## 部署到 Vercel
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/orders` | 创建订单并预扣库存 |
+| POST | `/api/orders/[id]/cancel` | 取消待支付订单并归还库存 |
+| GET/POST/DELETE | `/api/cart` | 服务端购物车 |
+| POST | `/api/cart/merge` | 登录后合并本地购物车 |
+| GET/PATCH | `/api/admin/payments/channels` | 支付通道列表与配置 |
+| POST | `/api/payments/webhook/stripe` | Stripe 回调 |
+| GET/POST | `/api/products/[id]/reviews` | 商品评价 |
+| GET | `/api/admin/audit-logs` | 审计日志 |
 
-1. 导入本仓库
-2. 环境变量：`DATABASE_URL`、`JWT_SECRET`
-3. Deploy
-4. 部署后执行 `npx prisma db push`（或在 Vercel 构建后钩子中配置）
+## 环境变量
 
-## 架构说明（来自对话设计）
+见 `.env.example`：`DATABASE_URL`、`JWT_SECRET`、`CONFIG_ENCRYPTION_KEY`、`STRIPE_*`、`CRON_SECRET` 等。
 
-- **支付通道**：注册表声明可用渠道 → 数据库记录 enabled + configComplete → 后台填 Key 后才可点亮启用
-- **权限**：细粒度 Permission + RolePermission，超管拥有全部权限
-- **隐私**：年龄门禁 + 无敏感包装承诺 + 法律页面
-- **扩展方向**：购物车持久化、订单全生命周期、Stripe webhook、多语言字典、审计日志、评价系统等设计已完成，可按需继续落地
+无数据库时前台商品与多数页面仍可用演示数据；订单/购物车/支付配置在连接数据库后生效完整能力。
 
-## 与 adult-store 的关系
+## 架构要点（对齐对话设计）
 
-本仓库为根据完整对话设计**重新开发**的独立项目，比之前的 `adult-store` 演示版结构更完整，Schema 与架构对齐 Hermes 设计文档。
+- **支付通道**：注册表声明 → DB 存 enabled + configComplete → 后台填 Key 加密保存 → 配置完整才可启用
+- **订单**：服务端重算价格、事务内预扣库存，取消时归还
+- **购物车**：游客 localStorage（zustand），登录用户可同步服务端
+- **Webhook**：`/api/payments/webhook/stripe`，支付成功更新订单状态
