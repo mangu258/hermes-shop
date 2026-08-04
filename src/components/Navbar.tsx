@@ -49,9 +49,9 @@ export default function Navbar() {
             <ShoppingBag className="h-5 w-5" />
           </Link>
           <Link
-            href="/login"
+            href="/account"
             className="rounded-full p-2 text-gray-600 hover:bg-pink-50 hover:text-brand-600"
-            title={t(dict, 'nav.login')}
+            title="账户"
           >
             <User className="h-5 w-5" />
           </Link>
