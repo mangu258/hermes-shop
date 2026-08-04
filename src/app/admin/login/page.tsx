@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shield } from 'lucide-react';
 
@@ -43,24 +44,48 @@ export default function AdminLoginPage() {
             <Shield className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold">管理后台登录</h1>
-          <p className="mt-1 text-sm text-gray-500">演示：admin@hermes-shop.local / admin123</p>
+          <p className="mt-1 text-sm text-gray-500">与前台用户登录完全分离</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">邮箱</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border px-4 py-2.5 outline-none focus:border-gray-400" required />
+            <label className="mb-1 block text-sm font-medium">管理员邮箱</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-xl border px-4 py-2.5 outline-none focus:border-gray-400"
+              required
+            />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">密码</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border px-4 py-2.5 outline-none focus:border-gray-400" required />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border px-4 py-2.5 outline-none focus:border-gray-400"
+              required
+            />
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full rounded-full bg-gray-900 py-3 font-semibold text-white hover:bg-gray-800 disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-full bg-gray-900 py-3 font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+          >
             {loading ? '验证中...' : '进入后台'}
           </button>
         </form>
         <p className="mt-6 text-center text-xs text-gray-400">
-          <a href="/" className="hover:underline">返回商城前台</a>
+          演示：admin@hermes-shop.local / admin123
+          <br />
+          <Link href="/login" className="hover:underline">
+            前台用户登录
+          </Link>
+          {' · '}
+          <Link href="/" className="hover:underline">
+            返回商城
+          </Link>
         </p>
       </div>
     </div>

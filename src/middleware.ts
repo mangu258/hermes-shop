@@ -25,7 +25,7 @@ function isExempt(pathname: string, prefixes: string[]) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. Age gate
+  // 1. Age gate (admin area exempt so ops can log in without age cookie)
   if (!isExempt(pathname, AGE_GATE_EXEMPT)) {
     const ageVerified = req.cookies.get('age_verified')?.value;
     if (!ageVerified) {
@@ -33,7 +33,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 2. Admin protection
+  // 2. Admin pages + admin APIs: require role === ADMIN
   const isAdminPage = pathname.startsWith('/admin') && pathname !== '/admin/login';
   const isAdminApi = pathname.startsWith('/api/admin');
 
@@ -47,8 +47,9 @@ export async function middleware(req: NextRequest) {
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET);
       if (payload.role !== 'ADMIN') {
+        // Logged-in storefront user hitting admin → send to admin login, not home
         return isAdminApi
-          ? NextResponse.json({ error: '无权限' }, { status: 403 })
+          ? NextResponse.json({ error: '需要管理员权限' }, { status: 403 })
           : NextResponse.redirect(new URL('/admin/login', req.url));
       }
     } catch {
@@ -57,6 +58,8 @@ export async function middleware(req: NextRequest) {
         : NextResponse.redirect(new URL('/admin/login', req.url));
     }
   }
+
+  // 3. Storefront user must not use admin-login API success path is already role-checked in handlers
 
   return NextResponse.next();
 }
