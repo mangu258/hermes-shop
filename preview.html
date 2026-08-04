@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hermes Shop · 交互式预览</title>
+<style>
+  :root {
+    --brand: #db2777;
+    --brand-soft: #fce7f3;
+    --bg: #f9fafb;
+    --card: #fff;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #1f2937; color: var(--text); min-height: 100vh; }
+  .shell { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    background: #111827; color: #e5e7eb; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px;
+  }
+  .toolbar strong { color: #f9a8d4; margin-right: 8px; }
+  .toolbar button {
+    border: 1px solid #374151; background: #1f2937; color: #e5e7eb;
+    padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 13px;
+  }
+  .toolbar button.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .toolbar button:hover { border-color: #f9a8d4; }
+  .frame-wrap {
+    background: #0b1220; border-radius: 16px; padding: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  }
+  .browser-bar {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px 12px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.r { background: #ff5f56; } .dot.y { background: #ffbd2e; } .dot.g { background: #27c93f; }
+  .url {
+    flex: 1; background: #1f2937; color: #9ca3af; font-size: 12px;
+    border-radius: 8px; padding: 6px 12px;
+  }
+  .screen {
+    background: var(--bg); border-radius: 12px; overflow: hidden; min-height: 640px;
+    display: none; flex-direction: column;
+  }
+  .screen.active { display: flex; }
+  /* shared shop chrome */
+  .nav {
+    height: 56px; background: rgba(255,255,255,.95); border-bottom: 1px solid #fbcfe8;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: sticky; top: 0;
+  }
+  .logo { font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 6px; }
+  .nav-links { display: flex; gap: 18px; font-size: 14px; color: #374151; }
+  .nav-links span { cursor: pointer; }
+  .nav-links span:hover { color: var(--brand); }
+  .nav-actions { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+  .chip { background: var(--brand-soft); color: #be185d; border-radius: 999px; padding: 2px 8px; }
+  .hero {
+    text-align: center; padding: 56px 20px 40px;
+    background: linear-gradient(135deg, #fdf2f8, #fff1f2, #fff);
+  }
+  .hero h1 { font-size: 32px; margin: 12px 0; }
+  .hero p { color: var(--muted); max-width: 480px; margin: 0 auto 20px; line-height: 1.6; }
+  .btn {
+    display: inline-block; background: var(--brand); color: #fff; border: none;
+    padding: 12px 24px; border-radius: 999px; font-weight: 600; cursor: pointer; font-size: 14px;
+  }
+  .btn.secondary { background: #fff; color: var(--brand); border: 1px solid #f9a8d4; }
+  .btn.dark { background: #111827; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .features {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    padding: 24px 20px; background: #fff; border-bottom: 1px solid var(--border);
+  }
+  .feature { text-align: center; font-size: 13px; color: var(--muted); }
+  .feature strong { display: block; color: var(--text); margin-bottom: 4px; }
+  .section { padding: 24px 20px 32px; }
+  .section h2 { font-size: 20px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    cursor: pointer; transition: .15s box-shadow;
+  }
+  .card:hover { box-shadow: 0 8px 24px rgba(219,39,119,.12); border-color: #fbcfe8; }
+  .card .img {
+    aspect-ratio: 1; background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+    display: flex; align-items: center; justify-content: center; color: #be185d; font-size: 13px;
+  }
+  .card .body { padding: 12px; }
+  .card .cat { font-size: 11px; color: var(--brand); text-transform: uppercase; }
+  .card .title { font-size: 13px; font-weight: 600; margin: 4px 0; line-height: 1.35; }
+  .card .price { font-weight: 700; color: var(--brand); }
+  .footer {
+    margin-top: auto; border-top: 1px solid var(--border); background: #fff;
+    padding: 20px; font-size: 12px; color: var(--muted); text-align: center;
+  }
+  /* age gate */
+  .age {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #111827; color: #fff; text-align: center; padding: 40px 20px;
+  }
+  .age h1 { font-size: 28px; margin-bottom: 12px; }
+  .age p { color: #9ca3af; max-width: 360px; margin-bottom: 24px; line-height: 1.6; }
+  .age .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  /* product detail */
+  .detail { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; padding: 24px 20px; }
+  .detail .photo {
+    aspect-ratio: 1; border-radius: 16px;
+    background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+    display: flex; align-items: center; justify-content: center; color: #be185d;
+  }
+  .detail .meta h1 { font-size: 24px; margin: 8px 0 12px; }
+  .detail .price { font-size: 28px; font-weight: 700; color: var(--brand); margin-bottom: 16px; }
+  .detail .desc { color: #4b5563; line-height: 1.7; margin-bottom: 16px; font-size: 14px; }
+  .badge-box { background: #fdf2f8; border-radius: 12px; padding: 12px; font-size: 13px; color: #9d174d; margin-bottom: 16px; }
+  /* cart / orders */
+  .panel { max-width: 560px; margin: 0 auto; padding: 24px 20px; width: 100%; }
+  .line {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px;
+  }
+  .line input { width: 56px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; }
+  .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #111827; color: #fff; padding: 10px 18px; border-radius: 999px;
+    font-size: 13px; display: none; z-index: 50;
+  }
+  /* admin */
+  .admin-top {
+    height: 52px; background: #fff; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 14px;
+  }
+  .admin-top .tag { background: #111; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-right: 8px; }
+  .admin-body { padding: 24px 20px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+  .stat .label { font-size: 12px; color: var(--muted); }
+  .stat .num { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .link-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+    cursor: pointer; font-size: 14px;
+  }
+  .link-card:hover { border-color: #f9a8d4; }
+  .link-card small { display: block; color: var(--muted); margin-top: 4px; }
+  .note {
+    margin-top: 20px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;
+    padding: 14px; font-size: 13px; color: #92400e;
+  }
+  .status { font-size: 11px; background: #f3f4f6; border-radius: 999px; padding: 2px 8px; }
+  .status.paid { background: #d1fae5; color: #065f46; }
+  .status.pending { background: #fef3c7; color: #92400e; }
+  @media (max-width: 800px) {
+    .grid, .features, .stats, .links, .detail { grid-template-columns: 1fr 1fr; }
+    .detail { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="toolbar">
+    <strong>Hermes Shop 预览</strong>
+    <button class="active" data-screen="age">年龄门禁</button>
+    <button data-screen="home">首页</button>
+    <button data-screen="detail">商品详情</button>
+    <button data-screen="cart">购物车</button>
+    <button data-screen="orders">我的订单</button>
+    <button data-screen="admin">管理后台</button>
+    <span style="margin-left:auto;font-size:12px;color:#9ca3af">单文件 · 可直接用浏览器打开</span>
+  </div>
+
+  <div class="frame-wrap">
+    <div class="browser-bar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <div class="url" id="urlBar">localhost:3000/age-gate</div>
+    </div>
+
+    <!-- AGE -->
+    <div class="screen active" id="screen-age">
+      <div class="age">
+        <h1>年龄确认</h1>
+        <p>本网站包含成人内容，仅限18周岁及以上访问。进入即表示您确认已年满18岁。</p>
+        <div class="row">
+          <button class="btn" onclick="go('home')">我已满18岁，进入</button>
+          <button class="btn secondary" style="background:transparent;color:#d1d5db;border-color:#4b5563" onclick="toast('已离开站点（演示）')">未满18岁，离开</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <div class="screen" id="screen-home">
+      <div class="nav">
+        <div class="logo">♥ Hermes Shop</div>
+        <div class="nav-links">
+          <span>首页</span><span onclick="go('home')">全部商品</span><span onclick="go('orders')">订单</span><span>隐私承诺</span>
+        </div>
+        <div class="nav-actions">
+          <span class="chip">中文</span>
+          <span onclick="go('cart')" style="cursor:pointer">🛒</span>
+          <span>👤</span>
+        </div>
+      </div>
+      <div class="hero">
+        <span class="chip">隐私保护 · 盲盒发货 · 专业选型</span>
+        <h1>私密健康，从这里开始</h1>
+        <p>成人情趣与健康用品专卖。所有商品采用无敏感标志防透包装，快递单仅显示「日用品」。</p>
+        <button class="btn" onclick="go('detail')">浏览全部商品</button>
+      </div>
+      <div class="features">
+        <div class="feature"><strong>无敏感盲盒包装</strong>硬质防透纸箱，快递单无敏感字样</div>
+        <div class="feature"><strong>医用级安全材质</strong>硅胶/玻璃等身体安全材质</div>
+        <div class="feature"><strong>隐私优先</strong>订单信息严格保密</div>
+      </div>
+      <div class="section">
+        <h2>精选推荐</h2>
+        <div class="grid" id="productGrid"></div>
+      </div>
+      <div class="footer">© 2026 Hermes Shop · 仅限18岁以上成人 · 隐私保护至上</div>
+    </div>
+
+    <!-- DETAIL -->
+    <div class="screen" id="screen-detail">
+      <div class="nav">
+        <div class="logo">♥ Hermes Shop</div>
+        <div class="nav-links"><span onclick="go('home')">← 返回列表</span></div>
+        <div class="nav-actions"><span onclick="go('cart')" style="cursor:pointer">🛒 <span id="cartCount">0</span></span></div>
+      </div>
+      <div class="detail">
+        <div class="photo">商品主图</div>
+        <div class="meta">
+          <div class="cat" style="color:var(--brand);font-size:12px">入门推荐</div>
+          <h1>医用级硅胶入门震动棒 · 静音防水</h1>
+          <div class="price">¥129.00</div>
+          <p class="desc">亲肤医用级硅胶，低噪音设计（&lt;40dB），IPX7防水，多频震动模式。所有包装均无敏感标识。</p>
+          <div class="badge-box">
+            📦 无敏感盲盒包装，快递单仅显示「日用品」<br/>
+            🛡 身体安全材质，附清洁与使用说明
+          </div>
+          <button class="btn" onclick="addCart()">加入购物车</button>
+          <p style="margin-top:10px;font-size:12px;color:var(--muted)">库存：50 件 · 支持未开封7天无理由退换</p>
+        </div>
+      </div>
+      <div class="section" style="border-top:1px solid var(--border)">
+        <h2 style="font-size:16px">用户评价</h2>
+        <p style="color:var(--muted);font-size:13px">暂无评价（接数据库后展示）</p>
+      </div>
+      <div class="footer">© 2026 Hermes Shop</div>
+    </div>
+
+    <!-- CART -->
+    <div class="screen" id="screen-cart">
+      <div class="nav">
+        <div class="logo">♥ Hermes Shop</div>
+        <div class="nav-actions"><span onclick="go('home')" style="cursor:pointer">继续购物</span></div>
+      </div>
+      <div class="panel">
+        <h2 style="margin-bottom:16px">购物车</h2>
+        <div id="cartLines"></div>
+        <div class="actions" id="cartActions" style="display:none">
+          <button class="btn" onclick="checkout(true)">下单并 Stripe 支付</button>
+          <button class="btn secondary" onclick="checkout(false)">下单（待人工确认收款）</button>
+        </div>
+        <p id="cartEmpty" style="text-align:center;color:var(--muted);padding:40px 0">购物车是空的 · 先去商品详情加购</p>
+      </div>
+      <div class="footer">需登录后创建真实订单 · 演示 user@store.com / user123</div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="screen" id="screen-orders">
+      <div class="nav">
+        <div class="logo">♥ Hermes Shop</div>
+        <div class="nav-actions"><span onclick="go('home')" style="cursor:pointer">首页</span></div>
+      </div>
+      <div class="panel">
+        <h2 style="margin-bottom:16px">我的订单</h2>
+        <div class="line">
+          <div>
+            <div style="font-size:12px;color:var(--muted)">demo-order-001 · 刚刚</div>
+            <div style="font-weight:700;color:var(--brand);margin-top:4px">¥129.00</div>
+            <div style="font-size:13px;margin-top:4px">医用级硅胶入门震动棒 × 1</div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <button class="btn" style="padding:6px 12px;font-size:12px" onclick="toast('将跳转 Stripe Checkout（需配置密钥）')">Stripe 支付</button>
+              <button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="toast('订单已取消，库存归还（演示）')">取消订单</button>
+            </div>
+          </div>
+          <span class="status pending">待支付</span>
+        </div>
+        <div class="line">
+          <div>
+            <div style="font-size:12px;color:var(--muted)">demo-order-000 · 昨天</div>
+            <div style="font-weight:700;color:var(--brand);margin-top:4px">¥49.00</div>
+            <div style="font-size:13px;margin-top:4px">高品质润滑液 × 1</div>
+          </div>
+          <span class="status paid">已支付</span>
+        </div>
+      </div>
+      <div class="footer">Webhook / 后台确认收款后状态变为已支付</div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="screen" id="screen-admin">
+      <div class="admin-top">
+        <div><span class="tag">ADMIN</span>Hermes Shop 管理后台</div>
+        <span style="color:var(--muted);cursor:pointer" onclick="go('home')">返回前台</span>
+      </div>
+      <div class="admin-body">
+        <h2 style="margin-bottom:16px">控制台概览</h2>
+        <div class="stats">
+          <div class="stat"><div class="label">商品（演示）</div><div class="num">6</div></div>
+          <div class="stat"><div class="label">待处理订单</div><div class="num">1</div></div>
+          <div class="stat"><div class="label">用户</div><div class="num">—</div></div>
+          <div class="stat"><div class="label">支付通道</div><div class="num">5</div></div>
+        </div>
+        <h3 style="font-size:15px;margin-bottom:10px">快捷入口</h3>
+        <div class="links">
+          <div class="link-card" onclick="toast('订单管理：列表 + 确认已收款')">订单管理<small>列表 / 人工确认收款</small></div>
+          <div class="link-card" onclick="toast('支付通道：加密存储 API Key，配置完整才可启用')">支付通道<small>配置 Key / 启用</small></div>
+          <div class="link-card" onclick="toast('审计日志：敏感操作记录')">审计日志<small>操作记录</small></div>
+        </div>
+        <div class="note">
+          <strong>部署要点</strong><br/>
+          DATABASE_URL · JWT_SECRET · CONFIG_ENCRYPTION_KEY<br/>
+          STRIPE_SECRET_KEY · Webhook → /api/payments/webhook/stripe<br/>
+          CRON_SECRET · 每 15 分钟取消超时待支付订单（默认 30 分钟）
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const products = [
+    { id: 'demo-1', cat: '入门推荐', title: '医用级硅胶入门震动棒 · 静音防水', price: 129 },
+    { id: 'demo-2', cat: '情侣互动', title: '双人共享跳蛋套装 · 远程控制', price: 199 },
+    { id: 'demo-3', cat: '护理清洁', title: '高品质润滑液 · 水溶性无刺激', price: 49 },
+    { id: 'demo-4', cat: '男性专区', title: '智能加热飞机杯 · APP联动', price: 359 },
+  ];
+  let cart = [];
+
+  const urls = {
+    age: 'localhost:3000/age-gate',
+    home: 'localhost:3000/',
+    detail: 'localhost:3000/products/demo-1',
+    cart: 'localhost:3000/cart',
+    orders: 'localhost:3000/orders',
+    admin: 'localhost:3000/admin',
+  };
+
+  function go(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    document.querySelectorAll('.toolbar button').forEach(b => {
+      b.classList.toggle('active', b.dataset.screen === name);
+    });
+    document.getElementById('urlBar').textContent = urls[name] || '';
+    if (name === 'cart') renderCart();
+  }
+
+  document.querySelectorAll('.toolbar button').forEach(btn => {
+    btn.addEventListener('click', () => go(btn.dataset.screen));
+  });
+
+  function renderProducts() {
+    const grid = document.getElementById('productGrid');
+    grid.innerHTML = products.map(p => `
+      <div class="card" onclick="go('detail')">
+        <div class="img">预览图</div>
+        <div class="body">
+          <div class="cat">${p.cat}</div>
+          <div class="title">${p.title}</div>
+          <div class="price">¥${p.price.toFixed(2)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function addCart() {
+    const p = products[0];
+    const hit = cart.find(i => i.id === p.id);
+    if (hit) hit.qty += 1;
+    else cart.push({ id: p.id, title: p.title, price: p.price, qty: 1 });
+    document.getElementById('cartCount').textContent = cart.reduce((s, i) => s + i.qty, 0);
+    toast('已加入购物车');
+  }
+
+  function renderCart() {
+    const box = document.getElementById('cartLines');
+    const empty = document.getElementById('cartEmpty');
+    const actions = document.getElementById('cartActions');
+    if (!cart.length) {
+      box.innerHTML = '';
+      empty.style.display = 'block';
+      actions.style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    actions.style.display = 'flex';
+    box.innerHTML = cart.map((i, idx) => `
+      <div class="line">
+        <div>
+          <div style="font-weight:600;font-size:14px">${i.title}</div>
+          <div style="color:var(--brand);font-size:13px">¥${i.price.toFixed(2)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" min="1" value="${i.qty}" onchange="cart[${idx}].qty=Number(this.value)||1;renderCart()" />
+          <button class="btn secondary" style="padding:4px 8px" onclick="cart.splice(${idx},1);renderCart()">删</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function checkout(stripe) {
+    if (!cart.length) return;
+    cart = [];
+    renderCart();
+    document.getElementById('cartCount').textContent = '0';
+    if (stripe) toast('演示：将创建订单并跳转 Stripe Checkout');
+    else toast('演示：订单已创建，待人工确认收款');
+    setTimeout(() => go('orders'), 600);
+  }
+
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.display = 'block';
+    clearTimeout(window.__tt);
+    window.__tt = setTimeout(() => { el.style.display = 'none'; }, 2200);
+  }
+
+  renderProducts();
+</script>
+</body>
+</html>
