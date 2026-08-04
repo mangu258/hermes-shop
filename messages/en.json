@@ -1,0 +1,41 @@
+{
+  "nav": {
+    "home": "Home",
+    "products": "All Products",
+    "cart": "Cart",
+    "profile": "My Account",
+    "login": "Log In",
+    "logout": "Log Out"
+  },
+  "product": {
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "outOfStock": "Out of Stock",
+    "inStock": "In Stock",
+    "price": "Price"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "checkout": "Checkout",
+    "continueShopping": "Continue Shopping"
+  },
+  "auth": {
+    "login": "Log In",
+    "register": "Sign Up",
+    "email": "Email",
+    "password": "Password"
+  },
+  "ageGate": {
+    "title": "Age Verification",
+    "warning": "This site contains adult content and is restricted to visitors 18 years or older.",
+    "confirm": "I am 18 or older, enter",
+    "deny": "I am under 18, leave"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "error": "Something went wrong, please try again"
+  }
+}
