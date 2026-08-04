@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { DEMO_PRODUCTS } from '@/lib/demo-data';
+import { listProducts } from '@/lib/products';
 import { Package, Shield, Sparkles } from 'lucide-react';
 
-export default function HomePage() {
-  const featured = DEMO_PRODUCTS.slice(0, 4);
+export const dynamic = 'force-dynamic';
+
+export default async function HomePage() {
+  const all = await listProducts();
+  const featured = all.slice(0, 4);
 
   return (
     <>
@@ -34,17 +37,23 @@ export default function HomePage() {
         <section className="border-b border-gray-100 bg-white py-12">
           <div className="mx-auto grid max-w-6xl gap-8 px-4 md:grid-cols-3">
             <div className="flex flex-col items-center text-center">
-              <div className="mb-3 rounded-2xl bg-pink-50 p-4"><Package className="h-8 w-8 text-brand-600" /></div>
+              <div className="mb-3 rounded-2xl bg-pink-50 p-4">
+                <Package className="h-8 w-8 text-brand-600" />
+              </div>
               <h3 className="mb-2 font-semibold">无敏感盲盒包装</h3>
               <p className="text-sm text-gray-600">硬质防透纸箱，快递单无任何敏感字样</p>
             </div>
             <div className="flex flex-col items-center text-center">
-              <div className="mb-3 rounded-2xl bg-pink-50 p-4"><Shield className="h-8 w-8 text-brand-600" /></div>
+              <div className="mb-3 rounded-2xl bg-pink-50 p-4">
+                <Shield className="h-8 w-8 text-brand-600" />
+              </div>
               <h3 className="mb-2 font-semibold">医用级安全材质</h3>
               <p className="text-sm text-gray-600">硅胶/玻璃等身体安全材质，严格质检</p>
             </div>
             <div className="flex flex-col items-center text-center">
-              <div className="mb-3 rounded-2xl bg-pink-50 p-4"><Sparkles className="h-8 w-8 text-brand-600" /></div>
+              <div className="mb-3 rounded-2xl bg-pink-50 p-4">
+                <Sparkles className="h-8 w-8 text-brand-600" />
+              </div>
               <h3 className="mb-2 font-semibold">隐私优先</h3>
               <p className="text-sm text-gray-600">订单信息严格保密，不出售给第三方</p>
             </div>
@@ -56,9 +65,16 @@ export default function HomePage() {
             <div className="mb-10 flex items-end justify-between">
               <div>
                 <h2 className="text-2xl font-bold">精选推荐</h2>
-                <p className="mt-1 text-gray-600">入门友好 · 高评价好物</p>
+                <p className="mt-1 text-gray-600">
+                  {featured[0]?.source === 'db' ? '数据库商品' : '演示商品'}
+                </p>
               </div>
-              <Link href="/products" className="text-sm font-medium text-brand-600 hover:underline">查看全部 →</Link>
+              <Link
+                href="/products"
+                className="text-sm font-medium text-brand-600 hover:underline"
+              >
+                查看全部 →
+              </Link>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {featured.map((p) => (
@@ -68,12 +84,22 @@ export default function HomePage() {
                   className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:border-pink-200 hover:shadow-md"
                 >
                   <div className="aspect-square overflow-hidden bg-gradient-to-br from-pink-50 to-rose-50">
-                    <img src={p.imageUrl} alt={p.title} className="h-full w-full object-cover transition group-hover:scale-105" />
+                    {p.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.imageUrl}
+                        alt={p.title}
+                        className="h-full w-full object-cover transition group-hover:scale-105"
+                      />
+                    ) : null}
                   </div>
                   <div className="p-4">
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-brand-500">{p.category}</p>
-                    <h3 className="mb-2 line-clamp-2 text-sm font-semibold group-hover:text-brand-600">{p.title}</h3>
-                    <span className="text-lg font-bold text-brand-600">¥{p.price.toFixed(2)}</span>
+                    <h3 className="mb-2 line-clamp-2 text-sm font-semibold group-hover:text-brand-600">
+                      {p.title}
+                    </h3>
+                    <span className="text-lg font-bold text-brand-600">
+                      ¥{p.price.toFixed(2)}
+                    </span>
                   </div>
                 </Link>
               ))}
